@@ -25,6 +25,19 @@ class OpenIDConnectAuthenticator < Auth::ManagedAuthenticator
   def enabled?
     SiteSetting.openid_connect_enabled
   end
+  
+  def after_authenticate(auth_token, existing_account: nil)
+    Rails.logger.info("after_authenticate called")
+    result = super(auth_token, existing_account: existing_account)
+    if existing_account
+      association = UserAssociatedAccount.find_by(user_id: existing_account.id, provider_name: auth_token[:provider], provider_uid: auth_token[:uid])
+      if association.nil?
+        Rails.logger.info("no associated_account found for this uuid")
+      end
+    end
+    
+    result
+  end
 
   def register_middleware(omniauth)
 
