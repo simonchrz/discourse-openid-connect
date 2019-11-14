@@ -33,6 +33,7 @@ class OpenIDConnectAuthenticator < Auth::ManagedAuthenticator
       association = UserAssociatedAccount.find_by(user_id: existing_account.id, provider_name: auth_token[:provider], provider_uid: auth_token[:uid])
       if association.nil?
         Rails.logger.info("no associated_account found for this uuid")
+        result.email_valid = false
       end
     end
     
