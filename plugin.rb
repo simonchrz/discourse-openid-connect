@@ -34,7 +34,6 @@ class OpenIDConnectAuthenticator < Auth::ManagedAuthenticator
       Rails.logger.info("found user by email #{auth_token[:info][:email]}")
       
       association = UserAssociatedAccount.find_by(provider_name: auth_token[:provider], provider_uid: auth_token[:uid])
-    
       if association
          Rails.logger.info("found associated_account with email #{association.info["email"]} and uuid #{association.provider_uid}")
          
@@ -50,7 +49,6 @@ class OpenIDConnectAuthenticator < Auth::ManagedAuthenticator
         
          #user = association&.user
          #Rails.logger.info("found user #{user.inspect}")
-         result = super(auth_token, existing_account: existing_account)
       else
          Rails.logger.info("no associated_account found for this uuid")
          result = Auth::Result.new
