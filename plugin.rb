@@ -28,13 +28,19 @@ class OpenIDConnectAuthenticator < Auth::ManagedAuthenticator
   
   def after_authenticate(auth_token, existing_account: nil)
     Rails.logger.info("after_authenticate called")
-    result = super(auth_token, existing_account: existing_account)
-    if existing_account
-      association = UserAssociatedAccount.find_by(user_id: existing_account.id, provider_name: auth_token[:provider], provider_uid: auth_token[:uid])
-      if association.nil?
-        Rails.logger.info("no associated_account found for this uuid")
-        result.email_valid = false
-      end
+    
+    association = UserAssociatedAccount.find_by(provider_name: auth_token[:provider], provider_uid: auth_token[:uid])
+    
+    if !association.nil?
+      Rails.logger.info("associated_account #{association.info["email"]} found for this uuid")
+      user = association&.user
+      Rails.logger.info("found user #{user.inspect}")
+      result = super(auth_token, existing_account: existing_account)
+    else
+      Rails.logger.info("no associated_account found for this uuid")
+      result.email_valid = false
+      result.failed = true
+      result.failed_reason = "wrong uuid on associated account"
     end
     
     result
