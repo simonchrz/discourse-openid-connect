@@ -27,22 +27,41 @@ class OpenIDConnectAuthenticator < Auth::ManagedAuthenticator
   end
   
   def after_authenticate(auth_token, existing_account: nil)
-    Rails.logger.info("after_authenticate called")
+    Rails.logger.info("after_authenticate called with uuid #{auth_token[:uid]} and email #{auth_token[:info][:email]}")
     
-    association = UserAssociatedAccount.find_by(provider_name: auth_token[:provider], provider_uid: auth_token[:uid])
+    user = User.find_by_email(auth_token[:info][:email])
+    if user
+      Rails.logger.info("found user by email #{auth_token[:info][:email]}")
+      
+      association = UserAssociatedAccount.find_by(provider_name: auth_token[:provider], provider_uid: auth_token[:uid])
     
-    if !association.nil?
-      Rails.logger.info("associated_account #{association.info["email"]} found for this uuid")
-      user = association&.user
-      Rails.logger.info("found user #{user.inspect}")
-      result = super(auth_token, existing_account: existing_account)
+      if association
+         Rails.logger.info("found associated_account with email #{association.info["email"]} and uuid #{association.provider_uid}")
+         
+         if auth_token[:info][:email] == association.info["email"]
+           Rails.logger.info("associated account fits to email+uuid combination")
+           result = super(auth_token, existing_account: existing_account)
+         else
+           Rails.logger.info("associated email is different to provided user email")
+           result = Auth::Result.new
+           result.failed = true
+           result.failed_reason = "found associated account is not assigned to provided user email"
+         end
+        
+         #user = association&.user
+         #Rails.logger.info("found user #{user.inspect}")
+         result = super(auth_token, existing_account: existing_account)
+      else
+         Rails.logger.info("no associated_account found for this uuid")
+         result = Auth::Result.new
+         result.failed = true
+         result.failed_reason = "no associated account found for this user. please use your local credentials."
+      end
     else
-      Rails.logger.info("no associated_account found for this uuid")
-      result.email_valid = false
-      result.failed = true
-      result.failed_reason = "wrong uuid on associated account"
+      Rails.logger.info("no user found for this email. creating new user account with association.")
+      result = super(auth_token, existing_account: existing_account)
     end
-    
+      
     result
   end
 
