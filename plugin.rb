@@ -51,9 +51,7 @@ class OpenIDConnectAuthenticator < Auth::ManagedAuthenticator
          #Rails.logger.info("found user #{user.inspect}")
       else
          Rails.logger.info("no associated_account found for this uuid")
-         result = Auth::Result.new
-         result.failed = true
-         result.failed_reason = "no associated account found for this user. please use your local credentials."
+         result = super(auth_token, existing_account: existing_account)
       end
     else
       Rails.logger.info("no user found for this email. creating new user account with association.")
