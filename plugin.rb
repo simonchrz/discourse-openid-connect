@@ -52,7 +52,7 @@ class OpenIDConnectAuthenticator < Auth::ManagedAuthenticator
       else
          Rails.logger.info("no associated_account found for this uuid")
          result = super(auth_token, existing_account: existing_account)  
-         Jobs.enqueue(:critical_user_email, user_id: user.id, type: :account_exists)
+         Jobs.enqueue(:critical_user_email, user_id: user.id, type: :suspicious_login)
          Rails.logger.info("info mail send to user")
       end
     else
