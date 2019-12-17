@@ -32,16 +32,18 @@ class OpenIDConnectAuthenticator < Auth::ManagedAuthenticator
     user = User.find_by_email(auth_token[:info][:email])
     if user
       Rails.logger.info("found user by email #{auth_token[:info][:email]}")
+      Rails.logger.info("user #{user.inspect}")
       
-      association = UserAssociatedAccount.find_by(provider_name: auth_token[:provider], provider_uid: auth_token[:uid])
+      association = UserAssociatedAccount.find_by(provider_name: auth_token[:provider], user_id: user.id)
       if association
          Rails.logger.info("found associated_account with email #{association.info["email"]} and uuid #{association.provider_uid}")
+         Rails.logger.info("association #{association.inspect}")
          
-         if auth_token[:info][:email] == association.info["email"]
+         if auth_token[:info][:email] == association.info["email"] && auth_token[:uid] == association.provider_uid
            Rails.logger.info("associated account fits to email+uuid combination")
            result = super(auth_token, existing_account: existing_account)
          else
-           Rails.logger.info("associated email is different to provided user email")
+           Rails.logger.info("associated email or uuid is different to provided user email or uuid")
            result = Auth::Result.new
            result.failed = true
            result.failed_reason = "found associated account is not assigned to provided user email"
